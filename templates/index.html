@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Stress Testing Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:disabled { background: #6c757d; }
+        .stats { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Network Stress Testing Tool</h1>
+        <p><strong>⚠️ FOR EDUCATIONAL USE ONLY</strong></p>
+        
+        <div class="form-group">
+            <label>Target URL/IP:</label>
+            <input type="text" id="target" value="httpbin.org" placeholder="Enter target hostname">
+        </div>
+        
+        <div class="form-group">
+            <label>Port:</label>
+            <input type="number" id="port" value="80">
+        </div>
+        
+        <div class="form-group">
+            <label>Duration (seconds):</label>
+            <input type="number" id="duration" value="30">
+        </div>
+        
+        <div class="form-group">
+            <label>Threads:</label>
+            <input type="number" id="threads" value="10">
+        </div>
+        
+        <div class="form-group">
+            <label>Attack Method:</label>
+            <select id="method">
+                <option value="http_flood">🚀 HTTP Flood</option>
+            </select>
+        </div>
+        
+        <button onclick="startAttack()" id="startBtn">🚀 START ATTACK</button>
+        <button onclick="stopAttack()" id="stopBtn" disabled>🛑 STOP ATTACK</button>
+        
+        <div class="stats">
+            <h3>📊 Attack Statistics</h3>
+            <p>Status: <span id="status">Ready</span></p>
+            <p>Requests Sent: <span id="requestsSent">0</span></p>
+            <p>Successful: <span id="successful" class="success">0</span></p>
+            <p>Failed: <span id="failed" class="error">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        let statusInterval;
+        
+        function startAttack() {
+            const target = document.getElementById('target').value;
+            const port = document.getElementById('port').value;
+            const duration = document.getElementById('duration').value;
+            const threads = document.getElementById('threads').value;
+            const method = document.getElementById('method').value;
+            
+            fetch('/start_attack', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target, port, duration, threads, method })
+            }).then(response => response.json())
+              .then(data => {
+                  document.getElementById('startBtn').disabled = true;
+                  document.getElementById('stopBtn').disabled = false;
+                  startStatusUpdates();
+              });
+        }
+        
+        function stopAttack() {
+            fetch('/stop_attack')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    clearInterval(statusInterval);
+                });
+        }
+        
+        function startStatusUpdates() {
+            statusInterval = setInterval(() => {
+                fetch('/attack_status')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('status').textContent = 
+                            data.is_running ? 'Running' : 'Stopped';
+                        document.getElementById('requestsSent').textContent = data.requests_sent;
+                        document.getElementById('successful').textContent = data.successful_requests;
+                        document.getElementById('failed').textContent = data.failed_requests;
+                        
+                        if (!data.is_running) {
+                            document.getElementById('startBtn').disabled = false;
+                            document.getElementById('stopBtn').disabled = true;
+                            clearInterval(statusInterval);
+                        }
+                    });
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
