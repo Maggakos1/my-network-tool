@@ -1,73 +1,205 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Network Stress Testing Tool</title>
+    <title>Advanced Network Stress Testing Tool - AUTHORIZED USE ONLY</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .form-group { margin: 15px 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        button { background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
-        button:disabled { background: #6c757d; }
-        .stats { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        .success { color: green; }
-        .error { color: red; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .legal-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        .form-group { 
+            margin: 15px 0; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        input, select { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        button { 
+            background: #dc3545; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background: #c82333;
+        }
+        .stats { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+            border-left: 4px solid #dc3545;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: #856404; font-weight: bold; }
+        .method-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .method-option {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .method-option.selected {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+        h1 { color: #dc3545; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛡️ Network Stress Testing Tool</h1>
-        <p><strong>⚠️ FOR EDUCATIONAL USE ONLY</strong></p>
+        <h1>🛡️ Advanced Stress Testing - AUTHORIZED USE ONLY</h1>
+        
+        <div class="legal-warning">
+            <strong>🚨 LEGAL WARNING:</strong> ONLY use on systems you OWN or have EXPLICIT WRITTEN permission to test. 
+            Unauthorized use is ILLEGAL and can result in CRIMINAL CHARGES.
+        </div>
         
         <div class="form-group">
             <label>Target URL/IP:</label>
-            <input type="text" id="target" value="httpbin.org" placeholder="Enter target hostname">
+            <input type="text" id="target" placeholder="Enter target hostname (e.g., your-test-site.com)" value="">
         </div>
         
-        <div class="form-group">
-            <label>Port:</label>
-            <input type="number" id="port" value="80">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Port:</label>
+                <input type="number" id="port" value="80">
+            </div>
+            
+            <div class="form-group">
+                <label>Duration (seconds):</label>
+                <input type="number" id="duration" value="30" min="1" max="300">
+            </div>
+            
+            <div class="form-group">
+                <label>Threads:</label>
+                <input type="number" id="threads" value="10" min="1" max="100">
+            </div>
         </div>
-        
-        <div class="form-group">
-            <label>Duration (seconds):</label>
-            <input type="number" id="duration" value="30">
-        </div>
-        
-        <div class="form-group">
-            <label>Threads:</label>
-            <input type="number" id="threads" value="10">
-        </div>
-        
+
         <div class="form-group">
             <label>Attack Method:</label>
-            <select id="method">
-                <option value="http_flood">🚀 HTTP Flood</option>
-            </select>
+            <div class="method-grid">
+                <div class="method-option" onclick="selectMethod('http_flood')">
+                    🚀 ULTRA HTTP Flood
+                </div>
+                <div class="method-option" onclick="selectMethod('udp_flood')">
+                    📦 ENHANCED UDP Flood
+                </div>
+                <div class="method-option" onclick="selectMethod('slowloris')">
+                    🐌 Slowloris Attack
+                </div>
+                <div class="method-option" onclick="selectMethod('mixed')">
+                    💥 MIXED All Methods
+                </div>
+            </div>
+            <input type="hidden" id="method" value="http_flood">
         </div>
         
-        <button onclick="startAttack()" id="startBtn">🚀 START ATTACK</button>
-        <button onclick="stopAttack()" id="stopBtn" disabled>🛑 STOP ATTACK</button>
+        <div style="text-align: center;">
+            <button onclick="showLegalWarning()" id="startBtn">🚀 START STRESS TEST</button>
+            <button onclick="stopAttack()" id="stopBtn" disabled>🛑 STOP TEST</button>
+        </div>
         
         <div class="stats">
-            <h3>📊 Attack Statistics</h3>
+            <h3>📊 Test Results</h3>
             <p>Status: <span id="status">Ready</span></p>
-            <p>Requests Sent: <span id="requestsSent">0</span></p>
+            <p>Current Method: <span id="currentMethod">None</span></p>
+            <p>Requests/Packets Sent: <span id="requestsSent">0</span></p>
             <p>Successful: <span id="successful" class="success">0</span></p>
             <p>Failed: <span id="failed" class="error">0</span></p>
+            <p>UDP Packets: <span id="packetsSent">0</span></p>
         </div>
     </div>
 
     <script>
         let statusInterval;
+        let selectedMethod = 'http_flood';
+        
+        function selectMethod(method) {
+            selectedMethod = method;
+            document.getElementById('method').value = method;
+            
+            // Update UI
+            document.querySelectorAll('.method-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+        
+        function showLegalWarning() {
+            const target = document.getElementById('target').value;
+            if (!target) {
+                alert('Please enter a target');
+                return;
+            }
+            
+            const warning = `🚨 EXTREME LEGAL WARNING 🚨\n\nYou are about to stress test: ${target}\n\nLEGAL REQUIREMENTS:\n• You MUST own this target\n• OR have EXPLICIT WRITTEN permission\n• Unauthorized testing is ILLEGAL\n• You accept FULL LEGAL responsibility\n\nDo you confirm you meet these requirements?`;
+            
+            if (confirm(warning)) {
+                startAttack();
+            }
+        }
         
         function startAttack() {
             const target = document.getElementById('target').value;
             const port = document.getElementById('port').value;
             const duration = document.getElementById('duration').value;
             const threads = document.getElementById('threads').value;
-            const method = document.getElementById('method').value;
+            const method = selectedMethod;
+            
+            if (!target) {
+                alert('Please enter a target');
+                return;
+            }
             
             fetch('/start_attack', {
                 method: 'POST',
@@ -75,9 +207,16 @@
                 body: JSON.stringify({ target, port, duration, threads, method })
             }).then(response => response.json())
               .then(data => {
+                  if (data.error) {
+                      alert(data.error);
+                      return;
+                  }
                   document.getElementById('startBtn').disabled = true;
                   document.getElementById('stopBtn').disabled = false;
                   startStatusUpdates();
+              })
+              .catch(error => {
+                  alert('Error starting attack: ' + error);
               });
         }
         
@@ -97,10 +236,12 @@
                     .then(response => response.json())
                     .then(data => {
                         document.getElementById('status').textContent = 
-                            data.is_running ? 'Running' : 'Stopped';
+                            data.is_running ? 'Running 🔴' : 'Stopped 🟢';
+                        document.getElementById('currentMethod').textContent = data.current_method;
                         document.getElementById('requestsSent').textContent = data.requests_sent;
                         document.getElementById('successful').textContent = data.successful_requests;
                         document.getElementById('failed').textContent = data.failed_requests;
+                        document.getElementById('packetsSent').textContent = data.packets_sent;
                         
                         if (!data.is_running) {
                             document.getElementById('startBtn').disabled = false;
@@ -110,6 +251,9 @@
                     });
             }, 1000);
         }
+        
+        // Initialize
+        document.querySelector('.method-option').classList.add('selected');
     </script>
 </body>
 </html>
