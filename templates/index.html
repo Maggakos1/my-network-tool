@@ -557,4 +557,210 @@
                         const connectionsList = document.getElementById('connectionsList');
                         connectionsList.innerHTML = '';
                         
-         
+                        if (data.active_connections && data.active_connections.length > 0) {
+                            data.active_connections.slice().reverse().forEach(conn => {
+                                const connElement = document.createElement('div');
+                                connElement.className = 'connection-item';
+                                connElement.innerHTML = `
+                                    <span style="color: #dc3545">[${new Date(conn.timestamp * 1000).toLocaleTimeString()}]</span>
+                                    ${conn.type} → ${conn.target} 
+                                    <span style="color: #28a745">(${conn.proxy})</span>
+                                    <span style="color: #ffc107">${conn.status}</span>
+                                `;
+                                connectionsList.appendChild(connElement);
+                            });
+                        }
+                        
+                        if (!data.is_running) {
+                            document.getElementById('startBtn').disabled = false;
+                            document.getElementById('stopBtn').disabled = true;
+                            clearInterval(statusInterval);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Status update error:', error);
+                    });
+            }, 1000);
+        }
+
+        function updateTestLogs(logs) {
+            const testResults = document.getElementById('testResults');
+            if (logs && logs.length > 0) {
+                testResults.innerHTML = '';
+                logs.forEach(log => {
+                    const logElement = document.createElement('div');
+                    logElement.style.padding = '2px 0';
+                    logElement.style.borderBottom = '1px solid #333';
+                    
+                    // Color code different types of messages
+                    if (log.includes('🚀') || log.includes('🎯') || log.includes('🔢') || log.includes('⏱️') || log.includes('🧵') || log.includes('📨') || log.includes('🔌')) {
+                        logElement.style.color = '#dc3545'; // Red for important info
+                    } else if (log.includes('📊') || log.includes('✅') || log.includes('📦') || log.includes('💾')) {
+                        logElement.style.color = '#28a745'; // Green for results
+                    } else if (log.includes('💥') || log.includes('⚡') || log.includes('🔥')) {
+                        logElement.style.color = '#ffc107'; // Yellow for performance ratings
+                    } else if (log.includes('=')) {
+                        logElement.style.color = '#666'; // Gray for separators
+                    } else if (log.includes('❌')) {
+                        logElement.style.color = '#dc3545'; // Red for errors
+                    } else if (log.includes('🐌')) {
+                        logElement.style.color = '#17a2b8'; // Blue for slowloris
+                    } else if (log.includes('📦')) {
+                        logElement.style.color = '#6f42c1'; // Purple for UDP
+                    } else {
+                        logElement.style.color = '#ccc'; // Default color
+                    }
+                    
+                    // Make certain messages bold
+                    if (log.includes('🚀 STARTING') || log.includes('📊 COMPLETED') || log.includes('💥 NUCLEAR') || log.includes('⚡ EXTREME') || log.includes('🔥 HIGH')) {
+                        logElement.style.fontWeight = 'bold';
+                    }
+                    
+                    logElement.textContent = log;
+                    testResults.appendChild(logElement);
+                });
+                // Auto-scroll to bottom
+                testResults.scrollTop = testResults.scrollHeight;
+            } else {
+                testResults.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">Test results will appear here when you start an attack...</div>';
+            }
+        }
+
+        function clearLogs() {
+            fetch('/clear_logs')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('testResults').innerHTML = 
+                        '<div style="color: #666; text-align: center; padding: 20px;">Test results will appear here when you start an attack...</div>';
+                })
+                .catch(error => {
+                    alert('Error clearing logs: ' + error);
+                });
+        }
+        
+        // Proxy Management
+        function loadProxies() {
+            fetch('/get_proxies')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Proxy load error:', data.error);
+                        return;
+                    }
+                    updateProxyTable(data.proxies);
+                    document.getElementById('activeProxiesCount').textContent = data.active_count;
+                })
+                .catch(error => {
+                    console.error('Proxy load error:', error);
+                });
+        }
+        
+        function updateProxyTable(proxies) {
+            const tbody = document.getElementById('proxyTableBody');
+            tbody.innerHTML = '';
+            
+            if (proxies.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No proxies added yet</td></tr>';
+                return;
+            }
+            
+            proxies.forEach(proxy => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${proxy.type}</td>
+                    <td>${proxy.address}</td>
+                    <td>${proxy.port}</td>
+                    <td><span class="success">Active</span></td>
+                    <td><button onclick="removeProxy('${proxy.address}', ${proxy.port})" style="background: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function addProxy() {
+            const type = document.getElementById('proxyType').value;
+            const address = document.getElementById('proxyAddress').value;
+            const port = document.getElementById('proxyPort').value;
+            const username = document.getElementById('proxyUsername').value;
+            const password = document.getElementById('proxyPassword').value;
+            
+            if (!address || !port) {
+                alert('Please enter address and port');
+                return;
+            }
+            
+            fetch('/add_proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, address, port, username, password })
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  if (data.status === 'success') {
+                      loadProxies();
+                      // Clear form
+                      document.getElementById('proxyAddress').value = '';
+                      document.getElementById('proxyPort').value = '';
+                      document.getElementById('proxyUsername').value = '';
+                      document.getElementById('proxyPassword').value = '';
+                  }
+              })
+              .catch(error => {
+                  alert('Error adding proxy: ' + error);
+              });
+        }
+        
+        function importProxies() {
+            const text = document.getElementById('bulkProxies').value;
+            
+            if (!text) {
+                alert('Please enter proxies to import');
+                return;
+            }
+            
+            fetch('/import_proxies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  loadProxies();
+                  document.getElementById('bulkProxies').value = '';
+              })
+              .catch(error => {
+                  alert('Error importing proxies: ' + error);
+              });
+        }
+        
+        function checkAllProxies() {
+            fetch('/check_proxies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => response.json())
+              .then(data => {
+                  alert('Proxy check started. This may take a few minutes.');
+                  setTimeout(loadProxies, 5000); // Reload after 5 seconds
+              })
+              .catch(error => {
+                  alert('Error checking proxies: ' + error);
+              });
+        }
+        
+        function removeProxy(address, port) {
+            if (confirm(`Remove proxy ${address}:${port}?`)) {
+                // In a real implementation, you'd call a remove endpoint
+                alert('Proxy removal would be implemented with a backend endpoint');
+                loadProxies();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.method-option').classList.add('selected');
+            loadProxies();
+            startStatusUpdates(); // Start monitoring even if no attack is running
+        });
+    </script>
+</body>
+</html>
