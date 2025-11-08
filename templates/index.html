@@ -532,4 +532,125 @@
                             const connElement = document.createElement('div');
                             connElement.className = 'connection-item';
                             connElement.innerHTML = `
-                                <span style="color: #dc3545">[${new Date(conn.timestamp * 
+                                <span style="color: #dc3545">[${new Date(conn.timestamp * 1000).toLocaleTimeString()}]</span>
+                                ${conn.type} → ${conn.target} 
+                                <span style="color: #28a745">(${conn.proxy})</span>
+                                <span style="color: #ffc107">${conn.status}</span>
+                            `;
+                            connectionsList.appendChild(connElement);
+                        });
+                        
+                        if (!data.is_running) {
+                            document.getElementById('startBtn').disabled = false;
+                            document.getElementById('stopBtn').disabled = true;
+                            clearInterval(statusInterval);
+                        }
+                    });
+            }, 1000);
+        }
+        
+        // Proxy Management
+        function loadProxies() {
+            fetch('/get_proxies')
+                .then(response => response.json())
+                .then(data => {
+                    updateProxyTable(data.proxies);
+                    document.getElementById('activeProxiesCount').textContent = data.active_count;
+                });
+        }
+        
+        function updateProxyTable(proxies) {
+            const tbody = document.getElementById('proxyTableBody');
+            tbody.innerHTML = '';
+            
+            proxies.forEach(proxy => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${proxy.type}</td>
+                    <td>${proxy.address}</td>
+                    <td>${proxy.port}</td>
+                    <td><span class="success">Active</span></td>
+                    <td><button onclick="removeProxy('${proxy.address}', ${proxy.port})" class="error">Remove</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function addProxy() {
+            const type = document.getElementById('proxyType').value;
+            const address = document.getElementById('proxyAddress').value;
+            const port = document.getElementById('proxyPort').value;
+            const username = document.getElementById('proxyUsername').value;
+            const password = document.getElementById('proxyPassword').value;
+            
+            if (!address || !port) {
+                alert('Please enter address and port');
+                return;
+            }
+            
+            fetch('/add_proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, address, port, username, password })
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  if (data.status === 'success') {
+                      loadProxies();
+                      // Clear form
+                      document.getElementById('proxyAddress').value = '';
+                      document.getElementById('proxyPort').value = '';
+                      document.getElementById('proxyUsername').value = '';
+                      document.getElementById('proxyPassword').value = '';
+                  }
+              });
+        }
+        
+        function importProxies() {
+            const text = document.getElementById('bulkProxies').value;
+            
+            if (!text) {
+                alert('Please enter proxies to import');
+                return;
+            }
+            
+            fetch('/import_proxies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  loadProxies();
+                  document.getElementById('bulkProxies').value = '';
+              });
+        }
+        
+        function checkAllProxies() {
+            fetch('/check_proxies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => response.json())
+              .then(data => {
+                  alert('Proxy check started. This may take a few minutes.');
+                  setTimeout(loadProxies, 5000); // Reload after 5 seconds
+              });
+        }
+        
+        function removeProxy(address, port) {
+            if (confirm(`Remove proxy ${address}:${port}?`)) {
+                // In a real implementation, you'd call a remove endpoint
+                alert('Proxy removal would be implemented with a backend endpoint');
+                loadProxies();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.method-option').classList.add('selected');
+            loadProxies();
+            startStatusUpdates(); // Start monitoring even if no attack is running
+        });
+    </script>
+</body>
+</html>
