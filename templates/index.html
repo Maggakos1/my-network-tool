@@ -201,6 +201,23 @@
             border-bottom: none;
         }
         
+        /* Test Results Styles */
+        .test-results {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .test-results div {
+            padding: 2px 0;
+            border-bottom: 1px solid #333;
+        }
+        
         h1, h2, h3 { 
             color: #dc3545; 
             margin-top: 0;
@@ -296,6 +313,17 @@
             <div style="text-align: center; margin: 25px 0;">
                 <button onclick="showLegalWarning()" id="startBtn">🚀 START STRESS TEST</button>
                 <button onclick="stopAttack()" id="stopBtn" disabled>🛑 STOP TEST</button>
+            </div>
+
+            <!-- Test Results Section -->
+            <div class="form-group">
+                <h3>📋 Test Results</h3>
+                <div class="test-results" id="testResults">
+                    <div style="color: #666; text-align: center; padding: 20px;">
+                        Test results will appear here when you start an attack...
+                    </div>
+                </div>
+                <button onclick="clearLogs()" style="margin-top: 10px;">🗑️ Clear Logs</button>
             </div>
         </div>
         
@@ -508,7 +536,7 @@
                 });
         }
         
-        // Status Updates
+        // Status Updates and Test Results
         let statusInterval;
         
         function startStatusUpdates() {
@@ -523,6 +551,9 @@
                         document.getElementById('statCurrentRPS').textContent = Math.round(data.current_rps);
                         document.getElementById('statAvgRPS').textContent = Math.round(data.avg_rps);
                         document.getElementById('statUDPPackets').textContent = data.packets_sent.toLocaleString();
+                        
+                        // Update test results logs
+                        updateTestLogs(data.test_logs);
                         
                         // Update connections list
                         const connectionsList = document.getElementById('connectionsList');
@@ -548,6 +579,58 @@
                     });
             }, 1000);
         }
+
+        function updateTestLogs(logs) {
+            const testResults = document.getElementById('testResults');
+            if (logs && logs.length > 0) {
+                testResults.innerHTML = '';
+                logs.forEach(log => {
+                    const logElement = document.createElement('div');
+                    logElement.style.padding = '2px 0';
+                    logElement.style.borderBottom = '1px solid #333';
+                    
+                    // Color code different types of messages
+                    if (log.includes('🚀') || log.includes('🎯') || log.includes('🔢') || log.includes('⏱️') || log.includes('🧵') || log.includes('📨') || log.includes('🔌')) {
+                        logElement.style.color = '#dc3545'; // Red for important info
+                    } else if (log.includes('📊') || log.includes('✅') || log.includes('📦') || log.includes('💾')) {
+                        logElement.style.color = '#28a745'; // Green for results
+                    } else if (log.includes('💥') || log.includes('⚡') || log.includes('🔥')) {
+                        logElement.style.color = '#ffc107'; // Yellow for performance ratings
+                    } else if (log.includes('=')) {
+                        logElement.style.color = '#666'; // Gray for separators
+                    } else if (log.includes('❌')) {
+                        logElement.style.color = '#dc3545'; // Red for errors
+                    } else if (log.includes('🐌')) {
+                        logElement.style.color = '#17a2b8'; // Blue for slowloris
+                    } else if (log.includes('📦')) {
+                        logElement.style.color = '#6f42c1'; // Purple for UDP
+                    } else {
+                        logElement.style.color = '#ccc'; // Default color
+                    }
+                    
+                    // Make certain messages bold
+                    if (log.includes('🚀 STARTING') || log.includes('📊 COMPLETED') || log.includes('💥 NUCLEAR') || log.includes('⚡ EXTREME') || log.includes('🔥 HIGH')) {
+                        logElement.style.fontWeight = 'bold';
+                    }
+                    
+                    logElement.textContent = log;
+                    testResults.appendChild(logElement);
+                });
+                // Auto-scroll to bottom
+                testResults.scrollTop = testResults.scrollHeight;
+            } else {
+                testResults.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">Test results will appear here when you start an attack...</div>';
+            }
+        }
+
+        function clearLogs() {
+            fetch('/clear_logs')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('testResults').innerHTML = 
+                        '<div style="color: #666; text-align: center; padding: 20px;">Test results will appear here when you start an attack...</div>';
+                });
+        }
         
         // Proxy Management
         function loadProxies() {
@@ -563,6 +646,11 @@
             const tbody = document.getElementById('proxyTableBody');
             tbody.innerHTML = '';
             
+            if (proxies.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No proxies added yet</td></tr>';
+                return;
+            }
+            
             proxies.forEach(proxy => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -570,7 +658,7 @@
                     <td>${proxy.address}</td>
                     <td>${proxy.port}</td>
                     <td><span class="success">Active</span></td>
-                    <td><button onclick="removeProxy('${proxy.address}', ${proxy.port})" class="error">Remove</button></td>
+                    <td><button onclick="removeProxy('${proxy.address}', ${proxy.port})" style="background: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button></td>
                 `;
                 tbody.appendChild(row);
             });
