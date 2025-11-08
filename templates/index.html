@@ -3,49 +3,91 @@
 <head>
     <title>Advanced Network Stress Testing Tool - AUTHORIZED USE ONLY</title>
     <style>
+        /* Base Styles */
         body { 
             font-family: Arial, sans-serif; 
-            margin: 40px; 
-            background: #f5f5f5; 
+            margin: 0;
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #fff;
         }
         .container { 
-            max-width: 900px; 
+            max-width: 1200px; 
             margin: 0 auto; 
-            background: white; 
+            background: #2d2d2d; 
             padding: 20px; 
             border-radius: 10px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         .legal-warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
+            background: #5c0000;
+            border: 1px solid #ff4444;
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
-            color: #856404;
+            color: #ffaaaa;
         }
+        
+        /* Tab Styles */
+        .tabs {
+            display: flex;
+            background: #3d3d3d;
+            border-radius: 5px 5px 0 0;
+            overflow: hidden;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            background: #3d3d3d;
+            border: none;
+            color: #ccc;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        .tab.active {
+            background: #dc3545;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 25px;
+            background: #363636;
+            border-radius: 0 0 5px 5px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Form Styles */
         .form-group { 
             margin: 15px 0; 
         }
         label { 
             display: block; 
-            margin-bottom: 5px; 
+            margin-bottom: 8px; 
             font-weight: bold; 
+            color: #ddd;
         }
-        input, select { 
+        input, select, textarea { 
             width: 100%; 
-            padding: 8px; 
-            border: 1px solid #ddd; 
+            padding: 10px; 
+            border: 1px solid #555; 
             border-radius: 4px; 
             box-sizing: border-box;
+            background: #2d2d2d;
+            color: #fff;
         }
         .form-row {
             display: flex;
-            gap: 15px;
+            gap: 20px;
+            margin-bottom: 15px;
         }
         .form-row .form-group {
             flex: 1;
         }
+        
+        /* Button Styles */
         button { 
             background: #dc3545; 
             color: white; 
@@ -54,79 +96,187 @@
             border-radius: 4px; 
             cursor: pointer; 
             margin: 5px; 
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
-        }
-        button:disabled { 
-            background: #6c757d; 
-            cursor: not-allowed;
+            transition: background 0.3s;
         }
         button:hover:not(:disabled) {
             background: #c82333;
         }
-        .stats { 
-            background: #f8f9fa; 
-            padding: 20px; 
-            border-radius: 5px; 
-            margin: 20px 0; 
+        button:disabled { 
+            background: #666; 
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+        }
+        
+        /* Stats and Monitoring */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #3d3d3d;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
             border-left: 4px solid #dc3545;
         }
-        .success { color: green; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
-        .warning { color: #856404; font-weight: bold; }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        
+        /* Method Grid */
         .method-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             margin: 15px 0;
         }
         .method-option {
-            padding: 10px;
-            border: 2px solid #ddd;
+            padding: 15px;
+            border: 2px solid #555;
             border-radius: 5px;
             cursor: pointer;
             text-align: center;
+            background: #3d3d3d;
+            transition: all 0.3s;
+        }
+        .method-option:hover {
+            border-color: #dc3545;
+            background: #4d2d2d;
         }
         .method-option.selected {
             border-color: #dc3545;
-            background: #fff5f5;
+            background: #5c2d2d;
         }
-        h1 { color: #dc3545; text-align: center; }
+        
+        /* Proxy Table */
+        .proxy-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: #2d2d2d;
+        }
+        .proxy-table th,
+        .proxy-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        .proxy-table th {
+            background: #3d3d3d;
+            color: #dc3545;
+        }
+        
+        /* Connections Monitor */
+        .connections-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .connection-item {
+            padding: 8px;
+            border-bottom: 1px solid #444;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .connection-item:last-child {
+            border-bottom: none;
+        }
+        
+        h1, h2, h3 { 
+            color: #dc3545; 
+            margin-top: 0;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .warning { color: #ffc107; font-weight: bold; }
+        
+        /* Checkbox Styles */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛡️ Advanced Stress Testing - AUTHORIZED USE ONLY</h1>
+        <h1>🛡️ Advanced Network Stress Testing Tool - AUTHORIZED USE ONLY</h1>
         
         <div class="legal-warning">
             <strong>🚨 LEGAL WARNING:</strong> ONLY use on systems you OWN or have EXPLICIT WRITTEN permission to test. 
             Unauthorized use is ILLEGAL and can result in CRIMINAL CHARGES.
         </div>
         
-        <div class="form-group">
-            <label>Target URL/IP:</label>
-            <input type="text" id="target" placeholder="Enter target hostname (e.g., your-test-site.com)" value="">
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab active" onclick="openTab('stress-testing')">Stress Testing</button>
+            <button class="tab" onclick="openTab('proxy-manager')">Proxy Manager</button>
+            <button class="tab" onclick="openTab('real-time-monitor')">Real-Time Monitor</button>
         </div>
         
-        <div class="form-row">
+        <!-- Stress Testing Tab -->
+        <div id="stress-testing" class="tab-content active">
+            <h2>🎯 Target Configuration</h2>
+            
             <div class="form-group">
-                <label>Port:</label>
-                <input type="number" id="port" value="80">
+                <label>Target URL/IP:</label>
+                <input type="text" id="target" placeholder="Enter target hostname (e.g., your-test-site.com)" value="">
             </div>
             
             <div class="form-group">
-                <label>Duration (seconds):</label>
-                <input type="number" id="duration" value="30" min="1" max="300">
+                <label>Port(s):</label>
+                <input type="text" id="ports" value="80,443,8080,8443" placeholder="Enter ports separated by commas">
             </div>
             
-            <div class="form-group">
-                <label>Threads:</label>
-                <input type="number" id="threads" value="10" min="1" max="100">
+            <h2>⚡ Stress Configuration</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Threads:</label>
+                    <input type="number" id="threads" value="50" min="1" max="1000">
+                </div>
+                
+                <div class="form-group">
+                    <label>Requests (0 = unlimited):</label>
+                    <input type="number" id="max_requests" value="1000" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Duration (seconds):</label>
+                    <input type="number" id="duration" value="60" min="1" max="3600">
+                </div>
             </div>
-        </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="use_proxies">
+                <label for="use_proxies">Use Proxies</label>
+                <span style="margin-left: 10px; color: #aaa;">Active Proxies: <span id="activeProxiesCount">0</span></span>
+            </div>
 
-        <div class="form-group">
-            <label>Attack Method:</label>
+            <h2>🎮 Stress Methods</h2>
             <div class="method-grid">
                 <div class="method-option" onclick="selectMethod('http_flood')">
                     🚀 ULTRA HTTP Flood
@@ -142,26 +292,145 @@
                 </div>
             </div>
             <input type="hidden" id="method" value="http_flood">
+            
+            <div style="text-align: center; margin: 25px 0;">
+                <button onclick="showLegalWarning()" id="startBtn">🚀 START STRESS TEST</button>
+                <button onclick="stopAttack()" id="stopBtn" disabled>🛑 STOP TEST</button>
+            </div>
         </div>
         
-        <div style="text-align: center;">
-            <button onclick="showLegalWarning()" id="startBtn">🚀 START STRESS TEST</button>
-            <button onclick="stopAttack()" id="stopBtn" disabled>🛑 STOP TEST</button>
+        <!-- Proxy Manager Tab -->
+        <div id="proxy-manager" class="tab-content">
+            <h2>📋 Proxy Manager</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Proxy Type:</label>
+                    <select id="proxyType">
+                        <option value="HTTP">HTTP</option>
+                        <option value="SOCKS4">SOCKS4</option>
+                        <option value="SOCKS5">SOCKS5</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Address:</label>
+                    <input type="text" id="proxyAddress" placeholder="IP address">
+                </div>
+                
+                <div class="form-group">
+                    <label>Port:</label>
+                    <input type="number" id="proxyPort" placeholder="Port">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Username (optional):</label>
+                    <input type="text" id="proxyUsername" placeholder="Username">
+                </div>
+                
+                <div class="form-group">
+                    <label>Password (optional):</label>
+                    <input type="password" id="proxyPassword" placeholder="Password">
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: end;">
+                    <button onclick="addProxy()" class="btn-success">➕ Add Proxy</button>
+                </div>
+            </div>
+            
+            <h3>📥 Bulk Import</h3>
+            <div class="form-group">
+                <label>Import Proxies (format: ip:port, one per line):</label>
+                <textarea id="bulkProxies" rows="6" placeholder="44.215.73.168:8118
+4.149.153.123:3128
+116.203.139.209:5678"></textarea>
+            </div>
+            <button onclick="importProxies()" class="btn-success">📥 Import Proxies</button>
+            <button onclick="checkAllProxies()">🔍 Check All Proxies</button>
+            
+            <h3>📊 Current Proxies</h3>
+            <div class="proxy-table-container">
+                <table class="proxy-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Address</th>
+                            <th>Port</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="proxyTableBody">
+                        <!-- Proxy list will be populated here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
         
-        <div class="stats">
-            <h3>📊 Test Results</h3>
-            <p>Status: <span id="status">Ready</span></p>
-            <p>Current Method: <span id="currentMethod">None</span></p>
-            <p>Requests/Packets Sent: <span id="requestsSent">0</span></p>
-            <p>Successful: <span id="successful" class="success">0</span></p>
-            <p>Failed: <span id="failed" class="error">0</span></p>
-            <p>UDP Packets: <span id="packetsSent">0</span></p>
+        <!-- Real-Time Monitor Tab -->
+        <div id="real-time-monitor" class="tab-content">
+            <h2>📊 Real-Time Statistics</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statRequestsSent">0</div>
+                    <div class="stat-label">Requests Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value success" id="statSuccessful">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value error" id="statFailed">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCurrentRPS">0</div>
+                    <div class="stat-label">Current RPS</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statAvgRPS">0</div>
+                    <div class="stat-label">Average RPS</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statUDPPackets">0</div>
+                    <div class="stat-label">UDP Packets</div>
+                </div>
+            </div>
+            
+            <h3>🌐 Active Connections</h3>
+            <div class="connections-list" id="connectionsList">
+                <!-- Connections will be populated here -->
+            </div>
         </div>
     </div>
 
     <script>
-        let statusInterval;
+        // Tab Management
+        function openTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            // Load proxies if opening proxy manager
+            if (tabName === 'proxy-manager') {
+                loadProxies();
+            }
+        }
+        
+        // Attack Methods
         let selectedMethod = 'http_flood';
         
         function selectMethod(method) {
@@ -175,14 +444,17 @@
             event.target.classList.add('selected');
         }
         
+        // Legal Warning and Attack Control
         function showLegalWarning() {
             const target = document.getElementById('target').value;
-            if (!target) {
-                alert('Please enter a target');
+            const ports = document.getElementById('ports').value;
+            
+            if (!target || !ports) {
+                alert('Please enter target and ports');
                 return;
             }
             
-            const warning = `🚨 EXTREME LEGAL WARNING 🚨\n\nYou are about to stress test: ${target}\n\nLEGAL REQUIREMENTS:\n• You MUST own this target\n• OR have EXPLICIT WRITTEN permission\n• Unauthorized testing is ILLEGAL\n• You accept FULL LEGAL responsibility\n\nDo you confirm you meet these requirements?`;
+            const warning = `🚨 EXTREME LEGAL WARNING 🚨\n\nYou are about to stress test: ${target}\nPorts: ${ports}\n\nLEGAL REQUIREMENTS:\n• You MUST own this target\n• OR have EXPLICIT WRITTEN permission\n• Unauthorized testing is ILLEGAL\n• You accept FULL LEGAL responsibility\n\nDo you confirm you meet these requirements?`;
             
             if (confirm(warning)) {
                 startAttack();
@@ -191,26 +463,32 @@
         
         function startAttack() {
             const target = document.getElementById('target').value;
-            const port = document.getElementById('port').value;
+            const ports = document.getElementById('ports').value;
             const duration = document.getElementById('duration').value;
             const threads = document.getElementById('threads').value;
+            const max_requests = document.getElementById('max_requests').value;
             const method = selectedMethod;
+            const use_proxies = document.getElementById('use_proxies').checked;
             
-            if (!target) {
-                alert('Please enter a target');
+            if (!target || !ports) {
+                alert('Please enter target and ports');
                 return;
             }
             
             fetch('/start_attack', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ target, port, duration, threads, method })
+                body: JSON.stringify({ 
+                    target, 
+                    ports, 
+                    duration, 
+                    threads, 
+                    max_requests, 
+                    method,
+                    use_proxies 
+                })
             }).then(response => response.json())
               .then(data => {
-                  if (data.error) {
-                      alert(data.error);
-                      return;
-                  }
                   document.getElementById('startBtn').disabled = true;
                   document.getElementById('stopBtn').disabled = false;
                   startStatusUpdates();
@@ -230,30 +508,28 @@
                 });
         }
         
+        // Status Updates
+        let statusInterval;
+        
         function startStatusUpdates() {
             statusInterval = setInterval(() => {
                 fetch('/attack_status')
                     .then(response => response.json())
                     .then(data => {
-                        document.getElementById('status').textContent = 
-                            data.is_running ? 'Running 🔴' : 'Stopped 🟢';
-                        document.getElementById('currentMethod').textContent = data.current_method;
-                        document.getElementById('requestsSent').textContent = data.requests_sent;
-                        document.getElementById('successful').textContent = data.successful_requests;
-                        document.getElementById('failed').textContent = data.failed_requests;
-                        document.getElementById('packetsSent').textContent = data.packets_sent;
+                        // Update statistics
+                        document.getElementById('statRequestsSent').textContent = data.requests_sent.toLocaleString();
+                        document.getElementById('statSuccessful').textContent = data.successful_requests.toLocaleString();
+                        document.getElementById('statFailed').textContent = data.failed_requests.toLocaleString();
+                        document.getElementById('statCurrentRPS').textContent = Math.round(data.current_rps);
+                        document.getElementById('statAvgRPS').textContent = Math.round(data.avg_rps);
+                        document.getElementById('statUDPPackets').textContent = data.packets_sent.toLocaleString();
                         
-                        if (!data.is_running) {
-                            document.getElementById('startBtn').disabled = false;
-                            document.getElementById('stopBtn').disabled = true;
-                            clearInterval(statusInterval);
-                        }
-                    });
-            }, 1000);
-        }
-        
-        // Initialize
-        document.querySelector('.method-option').classList.add('selected');
-    </script>
-</body>
-</html>
+                        // Update connections list
+                        const connectionsList = document.getElementById('connectionsList');
+                        connectionsList.innerHTML = '';
+                        
+                        data.active_connections.slice().reverse().forEach(conn => {
+                            const connElement = document.createElement('div');
+                            connElement.className = 'connection-item';
+                            connElement.innerHTML = `
+                                <span style="color: #dc3545">[${new Date(conn.timestamp * 
